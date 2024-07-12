@@ -34,6 +34,7 @@ entity TrueDualPortRam is
       DATA_WIDTH_G   : integer range 1 to (2**24) := 18;
       BYTE_WIDTH_G   : integer                    := 8;  -- Should be multiple of 8 or 9.
       ADDR_WIDTH_G   : integer range 1 to (2**24) := 9;
+      DEPTH_G        : integer range 1 to (2**24) := 0; -- Set a non-power-of-two depth. Defaults to 2**ADDR_WIDTH_G when set to 0
       INIT_G         : slv                        := "0");
    port (
       -- Port A
@@ -60,16 +61,27 @@ end TrueDualPortRam;
 
 architecture rtl of TrueDualPortRam is
 
+   function calculateDepth(depth:integer; addr_width:integer) 
+      return integer is
+   begin
+      if depth = 0 then
+         return 2**addr_width;
+      else
+         return depth;
+      end if;
+   end function;
+   
    -- Set byte width to word width if byte writes not enabled
    -- Otherwise block ram parity bits wont be utilized
    constant BYTE_WIDTH_C : natural := ite(BYTE_WR_EN_G, BYTE_WIDTH_G, DATA_WIDTH_G);
    constant NUM_BYTES_C       : natural := wordCount(DATA_WIDTH_G, BYTE_WIDTH_C);
    constant FULL_DATA_WIDTH_C : natural := NUM_BYTES_C*BYTE_WIDTH_C;
+   constant DEPTH_C : natural := calculateDepth(DEPTH_G, ADDR_WIDTH_G);
 
    constant INIT_C : slv(FULL_DATA_WIDTH_C-1 downto 0) := ite(INIT_G = "0", slvZero(FULL_DATA_WIDTH_C), INIT_G);
 
    -- Shared memory
-   type mem_type is array ((2**ADDR_WIDTH_G)-1 downto 0) of slv(FULL_DATA_WIDTH_C-1 downto 0);
+   type mem_type is array (DEPTH_C-1 downto 0) of slv(FULL_DATA_WIDTH_C-1 downto 0);
    shared variable mem : mem_type := (others => INIT_C);
 
    signal doutAInt : slv(FULL_DATA_WIDTH_C-1 downto 0) := (others => '0');
