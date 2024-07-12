@@ -34,7 +34,7 @@ entity TrueDualPortRam is
       DATA_WIDTH_G   : integer range 1 to (2**24) := 18;
       BYTE_WIDTH_G   : integer                    := 8;  -- Should be multiple of 8 or 9.
       ADDR_WIDTH_G   : integer range 1 to (2**24) := 9;
-      DEPTH_G        : integer range 1 to (2**24) := 0; -- Set a non-power-of-two depth. Defaults to 2**ADDR_WIDTH_G when set to 0
+      DEPTH_G        : integer range 0 to (2**24) := 0; -- Set a non-power-of-two depth. Defaults to 2**ADDR_WIDTH_G when set to 0
       INIT_G         : slv                        := "0");
    port (
       -- Port A
@@ -64,7 +64,7 @@ architecture rtl of TrueDualPortRam is
    function calculateDepth(depth:integer; addr_width:integer) 
       return integer is
    begin
-      if depth = 0 then
+      if depth = 0 or depth > 2**addr_width then
          return 2**addr_width;
       else
          return depth;
